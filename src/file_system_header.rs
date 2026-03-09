@@ -1,5 +1,6 @@
 use crate::file_header::FileHeader;
 use crate::file_header::FILE_HEADER_LENGTH;
+use crate::{BLOCK_SIZE};
 
 const OFFSET: usize = 5;
 
@@ -56,4 +57,11 @@ impl FileSystemHeader {
 
         Some(Self { count, disc_size, content })
     }
+
+    pub fn data_start_offset(&self) -> usize {
+        let header_size = OFFSET as usize + self.count as usize * FILE_HEADER_LENGTH;
+        let blocks_needed = (header_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        blocks_needed * BLOCK_SIZE
+    }
 }
+

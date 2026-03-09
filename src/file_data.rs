@@ -1,10 +1,12 @@
 use crate::main::BLOCK_SIZE;
 use crate::main::DISC_NAME;
+use file_header::{Extension, FileHeader};
 
-fn readFileData(start: u32, length: u32) -> Vec<u8> {
-    let mut f = std::fs::File::open(DISC_NAME.unwrap());
-    let mut bytes = Vec::new();
-    f.read_to_end(&mut bytes).unwrap();
 
-    return bytes[start*BLOCK_SIZE..(start+length)*BLOCK_SIZE];
+fn readFileData(&bytes: Vec<u8>, &file_header: FileHeader) -> Vec<u8> {
+    return bytes[file_header.start*BLOCK_SIZE..(file_header.start+file_header.length)*BLOCK_SIZE];
+}
+
+fn writeFileFata(&mut bytes: Vec<u8>, &mut file_header: FileHeader, data: Vec<u8>) {
+    file_header
 }

@@ -49,11 +49,15 @@ fn main() {
 
     let loaded = FileSystemHeader::deserialize(&bytes).unwrap();
 
+    let header_size = loaded.serialize().len();
+
     println!("File System Info: ");
     println!(
-        "files: {}, disc_size: {}",
+        "files: {}, disc_size: {}, header_size: {}, data_start: {}",
         loaded.count,
-        utils::format_bytes(loaded.disc_size as u64)
+        utils::format_bytes(loaded.disc_size as u64),
+        header_size,
+        loaded.data_start_offset()
     );
     println!("");
 
