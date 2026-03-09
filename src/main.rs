@@ -7,14 +7,28 @@ mod file_system_header;
 use file_system_header::{FileSystemHeader};
 
 fn main() {
-    let file = FileHeader {
+    let test_file = FileHeader {
         extension: Extension::Text,
         name: *b"hello.txt\0\0\0\0\0\0\0",
-        length: 1024,
-        start: 1,
+        length: 0,
+        start: 0,
     };
 
-    let bytes = file.serialize();
+    let test_file_2 = FileHeader {
+        extension: Extension::Text,
+        name: *b"world.txt\0\0\0\0\0\0\0",
+        length: 0,
+        start: 0,
+    };
+
+    let file_system_header = FileSystemHeader {
+        count: 2,
+        content: vec![test_file, test_file_2]
+    };
+
+
+
+    let bytes = file_system_header.serialize();
     let mut f = std::fs::File::create("test.img").unwrap();
     f.write_all(&bytes).unwrap();
     drop(f);
@@ -24,12 +38,17 @@ fn main() {
     f.read_to_end(&mut bytes).unwrap();
     drop(f);
 
-    let loaded = FileHeader::deserialize(&bytes).unwrap();
-    println!(
-        "type: {:?}, name: {:?}, length: {}, start: {}",
-        loaded.extension,
-        std::str::from_utf8(&loaded.name).unwrap_or("<invalid utf8>").trim_end_matches('\0'),
-        loaded.length,
-        loaded.start
-    );
+    let loaded = FileSystemHeader::deserialize(&bytes).unwrap();
+
+    for file in loaded.content {
+        println!(
+            "type: {:?}, name: {:?}, length: {}, start: {}",
+            file.extension,
+            std::str::from_utf8(&file.name).unwrap_or("<invalid utf8>").trim_end_matches('\0'),
+            file.length,
+            file.start
+        );
+    }
+
+ 
 }
