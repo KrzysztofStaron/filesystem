@@ -6,6 +6,12 @@ use file_header::{Extension, FileHeader};
 mod file_system_header;
 use file_system_header::{FileSystemHeader};
 
+mod utils;
+
+pub const BLOCK_SIZE: usize = 512; // in bytes
+pub const DISC_SIZE_BLOCKS: usize = 2048; // blocks
+pub const DISC_SIZE_BYTES: usize = BLOCK_SIZE*DISC_SIZE_BLOCKS;
+
 fn main() {
     let test_file = FileHeader {
         extension: Extension::Text,
@@ -23,6 +29,7 @@ fn main() {
 
     let file_system_header = FileSystemHeader {
         count: 2,
+        disc_size: DISC_SIZE_BYTES as u32,
         content: vec![test_file, test_file_2]
     };
 
@@ -39,6 +46,15 @@ fn main() {
     drop(f);
 
     let loaded = FileSystemHeader::deserialize(&bytes).unwrap();
+
+    println!("File System Info: ");
+    println!(
+        "files: {}, disc_size: {}",
+        loaded.count,
+        utils::format_bytes(loaded.disc_size as u64)
+    );
+    println!("");
+
 
     for file in loaded.content {
         println!(

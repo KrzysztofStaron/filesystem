@@ -1,11 +1,12 @@
 use crate::file_header::FileHeader;
 use crate::file_header::FILE_HEADER_LENGTH;
 
-const OFFSET: usize = 1;
+const OFFSET: usize = 5;
 
 #[repr(C)]
 pub struct FileSystemHeader {
     pub count: u8,
+    pub disc_size: u32,
     pub content: Vec<FileHeader>,
 }
 
@@ -16,6 +17,7 @@ impl FileSystemHeader {
         let mut bytes = Vec::with_capacity(vec_len);
 
         bytes.push(self.count);
+        bytes.extend_from_slice(&self.disc_size.to_le_bytes());
 
         for fh in &self.content {
             bytes.extend(fh.serialize());
@@ -30,6 +32,7 @@ impl FileSystemHeader {
         }
 
         let count = bytes[0];
+        let disc_size: u32 = u32::from_le_bytes(bytes[1..5].try_into().unwrap());
 
         if bytes.len() < OFFSET + (count as usize) * FILE_HEADER_LENGTH {
             return None;
@@ -51,6 +54,6 @@ impl FileSystemHeader {
             }
         }
 
-        Some(Self { count, content })
+        Some(Self { count, disc_size, content })
     }
 }
