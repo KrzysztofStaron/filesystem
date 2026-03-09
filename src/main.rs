@@ -1,20 +1,32 @@
-use std::collections::HashSet;
+use std::io::{Read, Write};
 
-pub fn find_different_binary_string(nums: Vec<String>) -> String {
-    let present : HashSet<u16> = nums.iter().map(|n| u16::from_str_radix(n, 2).unwrap()).collect();
-    let max: usize = 2_usize.pow(nums.len() as u32);
-    
-    for n in (0..max).rev() {
-        if !present.contains(&(n as u16)) {
-            return format!("{:0width$b}", n, width = nums.len());
-        }
-    }
-
-    "".to_string()
-}
+mod file;
+use file::FileHeader;
 
 fn main() {
-    let input = vec!["01".to_string(), "10".to_string()];
-    let result = find_different_binary_string(input);
-    println!("{}", result);
+    let file = FileHeader {
+        extension: 1,
+        name: *b"hello.txt\0\0\0\0\0\0\0",
+        length: 1024,
+        start: 1,
+    };
+
+    let bytes = file.serialize();
+    let mut f = std::fs::File::create("test.img").unwrap();
+    f.write_all(&bytes).unwrap();
+    drop(f);
+
+    let mut f = std::fs::File::open("test.img").unwrap();
+    let mut bytes = Vec::new();
+    f.read_to_end(&mut bytes).unwrap();
+    drop(f);
+
+    let loaded = FileHeader::deserialize(&bytes).unwrap();
+    println!(
+        "type: {}, name: {:?}, length: {}, start: {}",
+        loaded.extension,
+        std::str::from_utf8(&loaded.name).unwrap_or("<invalid utf8>").trim_end_matches('\0'),
+        loaded.length,
+        loaded.start
+    );
 }
