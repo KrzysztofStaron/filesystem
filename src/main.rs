@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 
-mod file;
-use file::FileHeader;
+mod file_header;
+use file_header::FileHeader;
 
 fn main() {
     let file = FileHeader {
