@@ -3,6 +3,9 @@ use std::io::{Read, Write};
 mod file_header;
 use file_header::{Extension, FileHeader};
 
+mod filesystem;
+use filesystem::FileSystem;
+
 mod file_system_header;
 use file_system_header::{FileSystemHeader};
 
@@ -14,6 +17,48 @@ pub const DISC_SIZE_BYTES: usize = BLOCK_SIZE*DISC_SIZE_BLOCKS;
 pub const DISC_NAME: &str = "mydisk.img";
 
 fn main() {
+    init_disk();
+
+    let mut f = std::fs::File::open(DISC_NAME).unwrap();
+    let mut bytes = Vec::new();
+
+    f.read_to_end(&mut bytes).unwrap();
+    drop(f);
+
+    let fs = FileSystem {
+        disk: bytes
+    };
+
+
+    let loaded = fs.header().unwrap();
+
+    let header_size = loaded.calc_size();
+
+    println!("File System Info: ");
+    println!(
+        "files: {}, disc_size: {}, header_size: {}, data_start: {}",
+        loaded.count,
+        utils::format_bytes(loaded.disc_size as u64),
+        utils::format_bytes(header_size as u64),
+        loaded.data_start_offset()
+    );
+    println!("");
+
+
+    for file in loaded.content {
+        println!(
+            "type: {:?}, name: {:?}, length: {}, start: {}",
+            file.extension,
+            std::str::from_utf8(&file.name).unwrap_or("<invalid utf8>").trim_end_matches('\0'),
+            file.length,
+            file.start
+        );
+    }
+
+ 
+}
+
+fn init_disk() {
     let test_file = FileHeader {
         extension: Extension::Text,
         name: *b"hello.txt\0\0\0\0\0\0\0",
@@ -41,36 +86,4 @@ fn main() {
     let mut f = std::fs::File::create(DISC_NAME).unwrap();
     f.write_all(&bytes).unwrap();
     drop(f);
-
-    let mut f = std::fs::File::open(DISC_NAME).unwrap();
-    let mut bytes = Vec::new();
-    f.read_to_end(&mut bytes).unwrap();
-    drop(f);
-
-    let loaded = FileSystemHeader::deserialize(&bytes).unwrap();
-
-    let header_size = loaded.serialize().len();
-
-    println!("File System Info: ");
-    println!(
-        "files: {}, disc_size: {}, header_size: {}, data_start: {}",
-        loaded.count,
-        utils::format_bytes(loaded.disc_size as u64),
-        header_size,
-        loaded.data_start_offset()
-    );
-    println!("");
-
-
-    for file in loaded.content {
-        println!(
-            "type: {:?}, name: {:?}, length: {}, start: {}",
-            file.extension,
-            std::str::from_utf8(&file.name).unwrap_or("<invalid utf8>").trim_end_matches('\0'),
-            file.length,
-            file.start
-        );
-    }
-
- 
 }

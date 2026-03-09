@@ -12,10 +12,12 @@ pub struct FileSystemHeader {
 }
 
 impl FileSystemHeader {
-    pub fn serialize(&self) -> Vec<u8> {
-        let vec_len: usize = OFFSET as usize + self.count as usize * FILE_HEADER_LENGTH;
+    pub fn calc_size(&self) -> usize {
+        OFFSET as usize + self.count as usize * FILE_HEADER_LENGTH
+    }
 
-        let mut bytes = Vec::with_capacity(vec_len);
+    pub fn serialize(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(self.calc_size());
 
         bytes.push(self.count);
         bytes.extend_from_slice(&self.disc_size.to_le_bytes());
@@ -59,8 +61,7 @@ impl FileSystemHeader {
     }
 
     pub fn data_start_offset(&self) -> usize {
-        let header_size = OFFSET as usize + self.count as usize * FILE_HEADER_LENGTH;
-        let blocks_needed = (header_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        let blocks_needed = (self.calc_size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
         blocks_needed * BLOCK_SIZE
     }
 }
