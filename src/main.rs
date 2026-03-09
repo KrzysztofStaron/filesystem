@@ -15,8 +15,8 @@ fn main() {
     };
 
     let test_file_2 = FileHeader {
-        extension: Extension::Text,
-        name: *b"world.txt\0\0\0\0\0\0\0",
+        extension: Extension::Binary,
+        name: *b"world.bin\0\0\0\0\0\0\0",
         length: 0,
         start: 0,
     };

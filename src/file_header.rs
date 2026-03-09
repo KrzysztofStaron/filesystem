@@ -3,6 +3,7 @@ pub const FILE_HEADER_LENGTH: usize = 25;
 #[derive(Debug)]
 pub enum Extension {
     Text,
+    Binary,
     Unknown(u8),
 }
 
@@ -10,6 +11,7 @@ impl Extension {
     pub fn to_u8(&self) -> u8 {
         match self {
             Extension::Text => 1,
+            Extension::Binary => 2,
             Extension::Unknown(b) => *b,
         }
     }
@@ -17,6 +19,7 @@ impl Extension {
     pub fn from_u8(b: u8) -> Self {
         match b {
             1 => Extension::Text,
+            2 => Extension::Binary,
             other => Extension::Unknown(other),
         }
     }
