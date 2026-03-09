@@ -1,11 +1,11 @@
 use std::io::{Read, Write};
 
 mod file_header;
-use file_header::FileHeader;
+use file_header::{Extension, FileHeader};
 
 fn main() {
     let file = FileHeader {
-        extension: 1,
+        extension: Extension::Text,
         name: *b"hello.txt\0\0\0\0\0\0\0",
         length: 1024,
         start: 1,
@@ -23,7 +23,7 @@ fn main() {
 
     let loaded = FileHeader::deserialize(&bytes).unwrap();
     println!(
-        "type: {}, name: {:?}, length: {}, start: {}",
+        "type: {:?}, name: {:?}, length: {}, start: {}",
         loaded.extension,
         std::str::from_utf8(&loaded.name).unwrap_or("<invalid utf8>").trim_end_matches('\0'),
         loaded.length,

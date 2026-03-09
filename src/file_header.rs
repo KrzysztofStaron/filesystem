@@ -1,6 +1,28 @@
+#[derive(Debug)]
+pub enum Extension {
+    Text,
+    Unknown(u8),
+}
+
+impl Extension {
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            Extension::Text => 1,
+            Extension::Unknown(b) => *b,
+        }
+    }
+
+    pub fn from_u8(b: u8) -> Self {
+        match b {
+            1 => Extension::Text,
+            other => Extension::Unknown(other),
+        }
+    }
+}
+
 #[repr(C)]
 pub struct FileHeader {
-    pub extension: u8,
+    pub extension: Extension,
     pub name: [u8; 16],
     pub length: u32,
     pub start: u32,
@@ -9,7 +31,7 @@ pub struct FileHeader {
 impl FileHeader {
     pub fn serialize(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(21);
-        bytes.push(self.extension);
+        bytes.push(self.extension.to_u8());
         bytes.extend_from_slice(&self.name);
         bytes.extend_from_slice(&self.length.to_le_bytes());
         bytes.extend_from_slice(&self.start.to_le_bytes());
@@ -21,7 +43,7 @@ impl FileHeader {
             return None;
         }
 
-        let extension = bytes[0];
+        let extension = Extension::from_u8(bytes[0]);
         let mut name = [0u8; 16];
         name.copy_from_slice(&bytes[1..17]);
         let length = u32::from_le_bytes(bytes[17..21].try_into().unwrap());
