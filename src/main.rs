@@ -67,7 +67,18 @@ fn run_terminal() {
                     cmd_write(&mut fs, parts[1], &content);
                 }
             }
+            "big" => {
+                if parts.len() < 3 {
+                    println!("big: usage: big FILE SIZEINBYTES");
+                } else {
+                    match parts[2].parse::<usize>() {
+                        Ok(size) => cmd_big(&mut fs, parts[1], size),
+                        Err(_) => println!("big: invalid size: {}", parts[2]),
+                    }
+                }
+            }
             "help" => cmd_help(),
+            "status" => cmd_status(&fs),
             "resetfs" => cmd_resetfs(&mut fs),
             "exit" | "quit" => break,
             _ => println!("Unknown command: {}", parts[0]),
@@ -87,6 +98,35 @@ fn cmd_create(fs: &mut FileSystem, filename: &str) {
     match fs.create(filename, ext) {
         Some(()) => {}
         None => println!("touch: {}: file exists or error", filename),
+    }
+    save_disk(fs);
+}
+
+fn cmd_big(fs: &mut FileSystem, filename: &str, size: usize) {
+    const LOREM: &[u8] = b"Lorem ipsum dolor sit amet, consectetur adipiscing elit. ";
+    let content: Vec<u8> = LOREM.iter().cycle().take(size).copied().collect();
+
+    if fs.open(filename).is_none() {
+        let ext = if filename.ends_with(".txt") {
+            Extension::Text
+        } else if filename.ends_with(".bin") {
+            Extension::Binary
+        } else {
+            Extension::Text
+        };
+        if fs.create(filename, ext).is_none() {
+            println!("big: {}: could not create file", filename);
+            return;
+        }
+    }
+
+    let Some(mut file) = fs.open_mut(filename) else {
+        println!("big: {}: no such file", filename);
+        return;
+    };
+    match file.write(&content) {
+        Some(()) => println!("Created {} ({} bytes)", filename, size),
+        None => println!("big: {}: not enough space", filename),
     }
     save_disk(fs);
 }
@@ -113,9 +153,46 @@ fn cmd_help() {
     println!("  cat FILE              display file contents");
     println!("  touch FILE            create a new file");
     println!("  write FILE TEXT       write text to a file");
+    println!("  big FILE SIZE         create file with lorem ipsum (SIZE in bytes)");
+    println!("  status                show disc usage and debug info");
     println!("  resetfs               clear the filesystem");
     println!("  help                  show this help");
     println!("  exit, quit            exit the terminal");
+}
+
+fn cmd_status(fs: &FileSystem) {
+    let Some(header) = fs.header() else {
+        println!("status: invalid filesystem");
+        return;
+    };
+
+    let disc_size = header.disc_size as usize;
+    let header_size = header.calc_size();
+    let data_start = header.data_start_offset();
+    let data_region_size = disc_size - data_start;
+    let total_blocks = data_region_size / BLOCK_SIZE;
+
+    let used_blocks: usize = header.content.iter().map(|f| f.length as usize).sum();
+    let used_bytes = used_blocks * BLOCK_SIZE;
+    let free_blocks = total_blocks.saturating_sub(used_blocks);
+    let free_bytes = free_blocks * BLOCK_SIZE;
+
+    println!("--- Disc status ---");
+    println!("Total size:     {} ({} bytes)", utils::format_bytes(disc_size as u64), disc_size);
+    println!("Used:           {} ({} bytes, {} blocks)", utils::format_bytes(used_bytes as u64), used_bytes, used_blocks);
+    println!("Available:      {} ({} bytes, {} blocks)", utils::format_bytes(free_bytes as u64), free_bytes, free_blocks);
+    println!();
+    println!("--- Debug info ---");
+    println!("Header size:    {} bytes", header_size);
+    println!("Data start:     {} ", data_start);
+    println!("File count:    {}", header.count);
+    println!();
+    println!("--- Files ---");
+    for (i, f) in header.content.iter().enumerate() {
+        let name = std::str::from_utf8(&f.name).unwrap_or("?").trim_end_matches('\0');
+        let size = (f.length as usize) * BLOCK_SIZE;
+        println!("  [{}] {}  start={}  length={} blocks  size={} bytes", i, name, f.start, f.length, size);
+    }
 }
 
 fn cmd_resetfs(fs: &mut FileSystem) {

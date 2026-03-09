@@ -127,6 +127,7 @@ impl<'a> File<'a> {
 }
 
 impl<'a> FileMut<'a> {
+    #[allow(dead_code)]
     pub fn read(&self) -> Vec<u8> {
         let start = self.start_at + (self.file_header.start as usize) * BLOCK_SIZE;
         let end = start + (self.file_header.length as usize) * BLOCK_SIZE;
