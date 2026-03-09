@@ -36,10 +36,7 @@ fn main() {
 
     
     let mut bytes = file_system_header.serialize();
-
-    while bytes.len() < DISC_SIZE_BYTES {
-        bytes.push(0);
-    }
+    bytes.resize(DISC_SIZE_BYTES, 0);
 
     let mut f = std::fs::File::create(DISC_NAME).unwrap();
     f.write_all(&bytes).unwrap();
