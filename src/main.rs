@@ -3,6 +3,9 @@ use std::io::{Read, Write};
 mod file_header;
 use file_header::{Extension, FileHeader};
 
+mod file_system_header;
+use file_system_header::{FileSystemHeader};
+
 fn main() {
     let file = FileHeader {
         extension: Extension::Text,
