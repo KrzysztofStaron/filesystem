@@ -17,15 +17,9 @@ pub const DISC_SIZE_BYTES: usize = BLOCK_SIZE * DISC_SIZE_BLOCKS;
 pub const DISC_NAME: &str = "mydisk.img";
 
 fn main() {
-    init_empty_disk();
-
-    let mut fs = FileSystem { disk: read_disk() };
-    fs.create("hello.txt", Extension::Text).unwrap();
-    fs.create("world.bin", Extension::Binary).unwrap();
-    if let Some(mut file) = fs.open_mut("hello.txt") {
-        file.write(b"Hello, world!").unwrap();
+    if !std::path::Path::new(DISC_NAME).exists() {
+        init_empty_disk();
     }
-    std::fs::write(DISC_NAME, &fs.disk).unwrap();
 
     run_terminal();
 }
@@ -67,13 +61,14 @@ fn run_terminal() {
             }
             "write" => {
                 if parts.len() < 3 {
-                    println!("write: usage: write <filename> <content>");
+                    println!("write: usage: write FILE TEXT");
                 } else {
                     let content = parts[2..].join(" ");
                     cmd_write(&mut fs, parts[1], &content);
                 }
             }
             "help" => cmd_help(),
+            "resetfs" => cmd_resetfs(&mut fs),
             "exit" | "quit" => break,
             _ => println!("Unknown command: {}", parts[0]),
         }
@@ -115,11 +110,18 @@ fn save_disk(fs: &FileSystem) {
 fn cmd_help() {
     println!("Available commands:");
     println!("  ls                    list files");
-    println!("  cat <filename>        display file contents");
-    println!("  touch <filename>      create a new file");
-    println!("  write <filename> <content>  write content to a file");
-    println!("  help                 show this help");
-    println!("  exit, quit           exit the terminal");
+    println!("  cat FILE              display file contents");
+    println!("  touch FILE            create a new file");
+    println!("  write FILE TEXT       write text to a file");
+    println!("  resetfs               clear the filesystem");
+    println!("  help                  show this help");
+    println!("  exit, quit            exit the terminal");
+}
+
+fn cmd_resetfs(fs: &mut FileSystem) {
+    init_empty_disk();
+    *fs = FileSystem { disk: read_disk() };
+    println!("Filesystem reset.");
 }
 
 fn cmd_ls(fs: &FileSystem) {
