@@ -13,20 +13,20 @@ impl FileSystem {
         FileSystemHeader::deserialize(&self.disk)
     }
 
-    pub fn open(&self, name: &str) -> File<'_> {
-        let header = self.header().unwrap();
+    pub fn open(&self, name: &str) -> Option<File<'_>> {
+        let header = self.header()?;
         let name_bytes = name.as_bytes();
-        
+
         let fh = header.content.iter().find(|f| {
             let end = f.name.iter().position(|&b| b == 0).unwrap_or(f.name.len());
             &f.name[..end] == name_bytes
-        }).unwrap();
+        })?;
 
-        File {
+        Some(File {
             disk: &self.disk,
             file_header: fh.clone(),
-            start_at: header.data_start_offset()
-        }
+            start_at: header.data_start_offset(),
+        })
     }
 
     pub fn open_mut(&mut self, name: &str) -> Option<FileMut<'_>> {
