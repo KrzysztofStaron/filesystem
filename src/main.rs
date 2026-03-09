@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 
 mod file_header;
-use file_header::{Extension, FileHeader};
+use file_header::Extension;
 
 mod filesystem;
 use filesystem::FileSystem;
@@ -17,35 +17,27 @@ pub const DISC_SIZE_BYTES: usize = BLOCK_SIZE*DISC_SIZE_BLOCKS;
 pub const DISC_NAME: &str = "mydisk.img";
 
 fn main() {
-    init_disk();
+    init_empty_disk();
 
-    let mut f = std::fs::File::open(DISC_NAME).unwrap();
-    let mut bytes = Vec::new();
+    let mut fs = FileSystem { disk: read_disk() };
+    fs.create("hello.txt", Extension::Text).unwrap();
+    fs.create("world.bin", Extension::Binary).unwrap();
+    std::fs::write(DISC_NAME, &fs.disk).unwrap();
 
-    f.read_to_end(&mut bytes).unwrap();
-    drop(f);
-
-    let fs = FileSystem {
-        disk: bytes
-    };
-
-
-    let loaded = fs.header().unwrap();
-
-    let header_size = loaded.calc_size();
+    let mut fs = FileSystem { disk: read_disk() };
+    let header = fs.header().unwrap();
 
     println!("File System Info: ");
     println!(
         "files: {}, disc_size: {}, header_size: {}, data_start: {}",
-        loaded.count,
-        utils::format_bytes(loaded.disc_size as u64),
-        utils::format_bytes(header_size as u64),
-        loaded.data_start_offset()
+        header.count,
+        utils::format_bytes(header.disc_size as u64),
+        utils::format_bytes(header.calc_size() as u64),
+        header.data_start_offset()
     );
     println!("");
 
-
-    for file in loaded.content {
+    for file in &header.content {
         println!(
             "type: {:?}, name: {:?}, length: {}, start: {}",
             file.extension,
@@ -55,35 +47,40 @@ fn main() {
         );
     }
 
- 
+    if let Some(mut file) = fs.open_mut("hello.txt") {
+        let data = "Hello, world! ".repeat(50);
+        file.write(data.as_bytes()).unwrap();
+    }
+
+    std::fs::write(DISC_NAME, &fs.disk).unwrap();
+
+    let file = fs.open("hello.txt");
+    let content = file.read();
+    let len = content.iter().position(|&b| b == 0).unwrap_or(content.len());
+    println!("read ({} bytes): {:?}", len, std::str::from_utf8(&content[..len]));
 }
 
-fn init_disk() {
-    let test_file = FileHeader {
-        extension: Extension::Text,
-        name: *b"hello.txt\0\0\0\0\0\0\0",
-        length: 0,
-        start: 0,
-    };
-
-    let test_file_2 = FileHeader {
-        extension: Extension::Binary,
-        name: *b"world.bin\0\0\0\0\0\0\0",
-        length: 0,
-        start: 0,
-    };
-
+fn init_empty_disk() {
     let file_system_header = FileSystemHeader {
-        count: 2,
+        count: 0,
         disc_size: DISC_SIZE_BYTES as u32,
-        content: vec![test_file, test_file_2]
+        content: vec![],
     };
 
-    
     let mut bytes = file_system_header.serialize();
     bytes.resize(DISC_SIZE_BYTES, 0);
 
     let mut f = std::fs::File::create(DISC_NAME).unwrap();
     f.write_all(&bytes).unwrap();
     drop(f);
+}
+
+fn read_disk() -> Vec<u8> {
+    let mut f = std::fs::File::open(DISC_NAME).unwrap();
+    let mut bytes = Vec::new();
+
+    f.read_to_end(&mut bytes).unwrap();
+    drop(f);
+
+    bytes
 }

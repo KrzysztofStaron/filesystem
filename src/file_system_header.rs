@@ -2,7 +2,7 @@ use crate::file_header::FileHeader;
 use crate::file_header::FILE_HEADER_LENGTH;
 use crate::{BLOCK_SIZE};
 
-const OFFSET: usize = 5;
+pub const HEADER_OFFSET: usize = 5;
 
 #[repr(C)]
 pub struct FileSystemHeader {
@@ -13,7 +13,7 @@ pub struct FileSystemHeader {
 
 impl FileSystemHeader {
     pub fn calc_size(&self) -> usize {
-        OFFSET as usize + self.count as usize * FILE_HEADER_LENGTH
+        HEADER_OFFSET as usize + self.count as usize * FILE_HEADER_LENGTH
     }
 
     pub fn serialize(&self) -> Vec<u8> {
@@ -30,21 +30,21 @@ impl FileSystemHeader {
     }
 
     pub fn deserialize(bytes: &[u8]) -> Option<Self> {
-        if bytes.len() < OFFSET {
+        if bytes.len() < HEADER_OFFSET {
             return None;
         }
 
         let count = bytes[0];
         let disc_size: u32 = u32::from_le_bytes(bytes[1..5].try_into().unwrap());
 
-        if bytes.len() < OFFSET + (count as usize) * FILE_HEADER_LENGTH {
+        if bytes.len() < HEADER_OFFSET + (count as usize) * FILE_HEADER_LENGTH {
             return None;
         }
 
         let mut content = Vec::with_capacity(count as usize);
 
         let content_bytes_len = count as usize * FILE_HEADER_LENGTH;
-        let content_bytes: &[u8] = &bytes[OFFSET..OFFSET + content_bytes_len];
+        let content_bytes: &[u8] = &bytes[HEADER_OFFSET..HEADER_OFFSET + content_bytes_len];
 
         for i in 0..(count as usize) {
             let slice_start = i*FILE_HEADER_LENGTH;

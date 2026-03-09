@@ -1,6 +1,6 @@
 pub const FILE_HEADER_LENGTH: usize = 25;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Extension {
     Text,
     Binary,
@@ -25,6 +25,7 @@ impl Extension {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct FileHeader {
     pub extension: Extension,
