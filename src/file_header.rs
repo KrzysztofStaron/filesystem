@@ -30,7 +30,7 @@ pub struct FileHeader {
 
 impl FileHeader {
     pub fn serialize(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(21);
+        let mut bytes: Vec<u8> = Vec::with_capacity(25);
         bytes.push(self.extension.to_u8());
         bytes.extend_from_slice(&self.name);
         bytes.extend_from_slice(&self.length.to_le_bytes());
@@ -43,10 +43,10 @@ impl FileHeader {
             return None;
         }
 
-        let extension = Extension::from_u8(bytes[0]);
-        let mut name = [0u8; 16];
+        let extension: Extension = Extension::from_u8(bytes[0]);
+        let mut name: [u8; 16] = [0u8; 16];
         name.copy_from_slice(&bytes[1..17]);
-        let length = u32::from_le_bytes(bytes[17..21].try_into().unwrap());
+        let length: u32 = u32::from_le_bytes(bytes[17..21].try_into().unwrap());
         let start: u32 = u32::from_le_bytes(bytes[21..25].try_into().unwrap());
 
         Some(Self { extension, name, length, start })
